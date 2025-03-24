@@ -1,0 +1,23 @@
+loader_config:
+  batch_size: 10
+  filePath: D:/develop/exprements/time_recursion/data/data.xlsx
+  sheet_name: Sheet1
+  train_percentage: 0.8
+model_paras_log_dir: paras_logs
+project_log_dir: logs
+model_save_dir: savepoints
+train_config:
+  lr: 0.01
+vae_config:
+  decoder_hidden_dim:
+  - 32
+  - 32
+  - 32
+  - 32
+  encoder_hidden_dim:
+  - 32
+  - 32
+  - 32
+  input_dim: 100
+  output_dim: 1
+  latent_dim: 20

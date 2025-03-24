@@ -1,0 +1,35 @@
+{
+    "version": 1,
+    "disable_existing_loggers": false,
+    "formatters": {
+      "detailed": {
+        "format": "[%(levelname)s][%(asctime)s][%(filename)s:%(lineno)d]: %(message)s",
+        "datefmt": "%Y-%m-%d %H:%M:%S"
+      }
+    },
+    "handlers": {
+      "rotating_file": {
+        "class": "logging.handlers.RotatingFileHandler",
+        "level": "INFO",
+        "formatter": "detailed",
+        "filename": "batch_log.log",
+        "maxBytes": 524288000, 
+        "backupCount": 3,
+        "encoding": "utf-8"
+      },
+      "console": {
+            "class": "logging.StreamHandler",
+            "level": "DEBUG",
+            "formatter": "detailed",
+            "stream": "ext://sys.stdout"
+        }
+    },
+    "loggers": {
+      "root": {
+        "level": "DEBUG",
+        "handlers": ["rotating_file","console"],
+        "propagate": false
+      }
+    }
+  }
+  
