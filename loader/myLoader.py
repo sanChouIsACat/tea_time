@@ -1,3 +1,4 @@
+import logging
 import torch.utils.data as data
 import pandas as pd
 import torch
@@ -35,6 +36,7 @@ class MyLoader(pytorch_lightning.LightningDataModule):
     def __init__(self, loaderCtx: MyLoaderCtx):
         super().__init__()
         self.__ctx = loaderCtx
+        self.__logger = logging.getLogger()
 
     def prepare_data(self):
         df = pd.read_excel(
@@ -56,14 +58,14 @@ class MyLoader(pytorch_lightning.LightningDataModule):
 
         # **Step 2: Robust Scaling**
         scaler = RobustScaler()
-        X_robust_scaled = scaler.fit_transform(X_log_scaled.numpy())
+        X_robust_scaled = scaler.fit_transform(X_log_scaled.cpu().numpy())
 
         # 重新转换为 Tensor
         X_robust_scaled = torch.tensor(X_robust_scaled, dtype=torch.float32)
 
         # 数据集拆分
         X_train, X_test, y_train, y_test = train_test_split(
-            X_robust_scaled.numpy(),
+            X_robust_scaled.cpu().numpy(),
             y,
             test_size=1 - self.__ctx.train_percentage,
             random_state=42,
@@ -74,6 +76,10 @@ class MyLoader(pytorch_lightning.LightningDataModule):
         self.__train_data_label = torch.tensor(y_train, dtype=torch.float32).view(-1, 1)
         self.__test_data = torch.tensor(X_test, dtype=torch.float32)
         self.__test_data_label = torch.tensor(y_test, dtype=torch.float32).view(-1, 1)
+        self.__logger.info("train label")
+        self.__logger.info(self.__train_data_label)
+        self.__logger.info("test label")
+        self.__logger.info(self.__test_data_label)
 
     def setup(self, stage: str = None):
         pass
@@ -81,9 +87,11 @@ class MyLoader(pytorch_lightning.LightningDataModule):
     def train_dataloader(self):
         # Use Mydataset to return both data and labels
         train_dataset = Mydataset(self.__train_data, self.__train_data_label)
-        return DataLoader(train_dataset, batch_size=self.__ctx.batch_size, shuffle=True)
+        real_batch_size = min(self.__ctx.batch_size,len(train_dataset))
+        return DataLoader(train_dataset, batch_size=real_batch_size, shuffle=True,generator=torch.Generator(device='cuda'))
 
     def val_dataloader(self):
         # Use Mydataset to return both data and labels
         val_dataset = Mydataset(self.__test_data, self.__test_data_label)
-        return DataLoader(val_dataset, batch_size=self.__ctx.batch_size, shuffle=False)
+        real_batch_size = min(self.__ctx.batch_size,len(val_dataset))
+        return DataLoader(val_dataset, batch_size=real_batch_size, shuffle=False,generator=torch.Generator(device='cuda'))

@@ -14,8 +14,7 @@ import logging
 import logging.config
 import os
 import json
-import asyncio
-
+import torch
 
 @serialiable
 @dataclass
@@ -26,6 +25,7 @@ class TrainConfig:
     vae_config: VaeCtx
     loader_config: MyLoaderCtx
     train_config: TrainCtx
+    max_epoch: int 
 
 
 def config_project_log(config_path: str, log_dir: str) -> None:
@@ -104,6 +104,10 @@ if __name__ == "__main__":
         logger = logging.getLogger()
         logger.info("log system started success")
 
+        # set default gpu
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        torch.set_default_device(device)
+
         # init model
         logger.info("init model")
         vae_model = VAE(config.vae_config)
@@ -128,7 +132,7 @@ if __name__ == "__main__":
         logger.info("init trainer")
         runner = Trainer(
             logger=tb_logger,
-            max_epochs=10000,
+            max_epochs=config.max_epoch,
             callbacks=[
                 # EarlyStopping(
                 #     monitor=BasicExpirement.VAL_RECONS_LOSS,  # 监控验证损失

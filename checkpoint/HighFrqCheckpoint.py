@@ -29,7 +29,7 @@ class HighFrqCheckpoint(ModelCheckpoint):
         os.makedirs(self.dirpath, exist_ok=True)
 
         # init save thread
-        Timer(self.__save_interval, self.__save_model).start()
+        #Timer(self.__save_interval, self.__save_model).start()
 
     def __save_model(self):
         self.__logger.info("currently store mem cache")
