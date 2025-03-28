@@ -5,6 +5,8 @@ from util.serializer import serialiable
 from dataclasses import dataclass
 from torch.utils.data import DataLoader
 import pytorch_lightning
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import RobustScaler
 
 
 @serialiable
@@ -38,27 +40,40 @@ class MyLoader(pytorch_lightning.LightningDataModule):
         df = pd.read_excel(
             self.__ctx.filePath, sheet_name=self.__ctx.sheet_name, header=None
         )
-        # Ensure the data is numeric and handle any non-numeric values (e.g., convert to NaN)
+
+        # 确保数据是数值型，非数值的转换为 NaN
         df = df.iloc[1:, 1:].apply(pd.to_numeric, errors="coerce")
 
-        # If there are NaN values, you can choose to either drop them or fill them with a default value
-        # For example, filling NaNs with 0:
+        # 去除全 NaN 行
         self.__df = df.dropna(how="all")
 
-        # Convert to tensor
-        train_size = int(self.__df.shape[0] * self.__ctx.train_percentage)
-        self.__train_data = torch.tensor(
-            self.__df.iloc[:train_size, :-1].values, dtype=torch.float32
+        # 分离特征 (X) 和标签 (y)
+        X = self.__df.iloc[:, :-1].values
+        y = self.__df.iloc[:, -1].values
+
+        # **Step 1: Log 变换**
+        X_log_scaled = torch.log(torch.tensor(X, dtype=torch.float32) + 1)
+
+        # **Step 2: Robust Scaling**
+        scaler = RobustScaler()
+        X_robust_scaled = scaler.fit_transform(X_log_scaled.numpy())
+
+        # 重新转换为 Tensor
+        X_robust_scaled = torch.tensor(X_robust_scaled, dtype=torch.float32)
+
+        # 数据集拆分
+        X_train, X_test, y_train, y_test = train_test_split(
+            X_robust_scaled.numpy(),
+            y,
+            test_size=1 - self.__ctx.train_percentage,
+            random_state=42,
         )
-        self.__train_data_label = torch.tensor(
-            self.__df.iloc[:train_size, -1].values, dtype=torch.float32
-        ).view(-1, 1)
-        self.__test_data = torch.tensor(
-            self.__df.iloc[train_size:, :-1].values, dtype=torch.float32
-        )
-        self.__test_data_label = torch.tensor(
-            self.__df.iloc[train_size:, -1].values, dtype=torch.float32
-        ).view(-1, 1)
+
+        # 转换为 PyTorch Tensor
+        self.__train_data = torch.tensor(X_train, dtype=torch.float32)
+        self.__train_data_label = torch.tensor(y_train, dtype=torch.float32).view(-1, 1)
+        self.__test_data = torch.tensor(X_test, dtype=torch.float32)
+        self.__test_data_label = torch.tensor(y_test, dtype=torch.float32).view(-1, 1)
 
     def setup(self, stage: str = None):
         pass

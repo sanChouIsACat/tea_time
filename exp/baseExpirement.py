@@ -14,10 +14,12 @@ class TrainCtx:
 
 
 class BasicExpirement(LightningModule):
-    TOTAL_LOSS = "total_loss"
-    RECONS_LOSS = "recons_loss"
-    KLD_LOSS = "kld_loss"
-    VAL_RECONS_LOSS = "val_loss"
+    TRAIN_TOTAL_LOSS = "train_total_loss"
+    TRAIN_RECONS_LOSS = "train_recons_loss"
+    TRAIN_KLD_LOSS = "train_kld_loss"
+    VAL_TOTAL_LOSS = "val_total_loss"
+    VAL_RECONS_LOSS = "val_recons_loss"
+    VAL_KLD_LOSS = "val_kld_loss"
 
     def __init__(self, model: VAE, ctx: TrainCtx) -> None:
         super(BasicExpirement, self).__init__()
@@ -28,13 +30,19 @@ class BasicExpirement(LightningModule):
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         return self.__model(input)
 
-    def log_loss(self, total_loss, recons_loss, kld_loss, stage: str, batch_idx: str):
-        self.log(BasicExpirement.TOTAL_LOSS, total_loss)
-        self.log(BasicExpirement.RECONS_LOSS, recons_loss)
-        self.log(BasicExpirement.KLD_LOSS, kld_loss)
-        self.__project_logger.info(
-            f"currently {stage} total loss [{total_loss.item()}] recons_loss [{recons_loss.item()}] kld_loss [{kld_loss.item()}] at batch [{batch_idx}]"
-        )
+    def log_train_loss(
+        self, total_loss, recons_loss, kld_loss, stage: str, batch_idx: str
+    ):
+        self.log(BasicExpirement.TRAIN_TOTAL_LOSS, total_loss)
+        self.log(BasicExpirement.TRAIN_RECONS_LOSS, recons_loss)
+        self.log(BasicExpirement.TRAIN_KLD_LOSS, kld_loss)
+
+    def log_val_loss(
+        self, total_loss, recons_loss, kld_loss, stage: str, batch_idx: str
+    ):
+        self.log(BasicExpirement.VAL_TOTAL_LOSS, total_loss)
+        self.log(BasicExpirement.VAL_RECONS_LOSS, recons_loss)
+        self.log(BasicExpirement.VAL_KLD_LOSS, kld_loss)
 
     def training_step(self, batch, batch_idx):
         datas, labels = batch
@@ -45,18 +53,21 @@ class BasicExpirement(LightningModule):
             results, labels, mu, logvar
         )
 
-        self.log_loss(train_loss, recons_loss, kld_loss, "train", batch_idx)
+        self.log_train_loss(train_loss, recons_loss, kld_loss, "train", batch_idx)
 
         return train_loss
 
-    def on_epoch_end(self):
+    def on_train_epoch_end(self):
         # 获取训练和验证损失的均值
-        avg_total_loss = self.logged_metrics.get(
-            BasicExpirement.TOTAL_LOSS, None
+        self.trainer.logged_metrics
+        avg_total_loss = self.trainer.logged_metrics.get(
+            BasicExpirement.TRAIN_TOTAL_LOSS, None
         ).mean()
-        avg_kld_loss = self.logged_metrics.get(BasicExpirement.KLD_LOSS, None).mean()
-        avg_recons_loss = self.logged_metrics.get(
-            BasicExpirement.RECONS_LOSS, None
+        avg_kld_loss = self.trainer.logged_metrics.get(
+            BasicExpirement.TRAIN_KLD_LOSS, None
+        ).mean()
+        avg_recons_loss = self.trainer.logged_metrics.get(
+            BasicExpirement.TRAIN_RECONS_LOSS, None
         ).mean()
         self.__project_logger.info(
             f"Epoch [{self.current_epoch + 1}] recons Loss: "
@@ -78,7 +89,7 @@ class BasicExpirement(LightningModule):
             results, labels, mu, logvar
         )
 
-        self.log_loss(val_loss, recons_loss, kld_loss, "train", batch_idx)
+        self.log_val_loss(val_loss, recons_loss, kld_loss, "train", batch_idx)
         self.log(BasicExpirement.VAL_RECONS_LOSS, recons_loss)
         return val_loss
 

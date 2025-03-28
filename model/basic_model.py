@@ -31,11 +31,15 @@ class BasicMlp(nn.Module):
         self.__linear_f = nn.Linear(inputDim, outputDim)
         self.__non_linear_f = non_linear_f
         self.__normalization_f = normalization_f
+        self.__dropout_f = nn.Dropout(0.1)
 
     def forward(self, x: torch.Tensor):
         x = self.__linear_f(x)
-        x = self.__non_linear_f(x)
-        x = self.__normalization_f(x)
+        if self.__non_linear_f != None:
+            x = self.__non_linear_f(x)
+        if self.__normalization_f != None:
+            x = self.__normalization_f(x)
+        x = self.__dropout_f(x)
         return x
 
 
@@ -50,7 +54,7 @@ class Coder(nn.Module):
         super().__init__()
         self.__residual_depth = residual_depth
         self.__transform_to_hidden_f = BasicMlp(
-            input_dim, hidden_dims[0], nn.Sigmoid(), nn.LayerNorm(hidden_dims[0])
+            input_dim, hidden_dims[0], nn.ReLU(), nn.BatchNorm1d(hidden_dims[0])
         )
 
         hidden_layers = []
@@ -59,15 +63,13 @@ class Coder(nn.Module):
                 BasicMlp(
                     hidden_dims[i - 1],
                     hidden_dims[i],
-                    nn.Sigmoid(),
-                    nn.LayerNorm(hidden_dims[i]),
+                    nn.ReLU(),
+                    nn.BatchNorm1d(hidden_dims[i]),
                 )
             )
         self.__hidden_fs = nn.ModuleList(hidden_layers)
 
-        self.__transform_to_output_f = BasicMlp(
-            hidden_dims[0], output_dim, nn.Sigmoid(), nn.LayerNorm(output_dim)
-        )
+        self.__transform_to_output_f = BasicMlp(hidden_dims[0], output_dim, None, None)
 
     def forward(self, x: torch.Tensor):
         x = self.__transform_to_hidden_f(x)

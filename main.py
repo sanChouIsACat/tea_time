@@ -6,7 +6,7 @@ import argparse
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
-from checkpoint.myCheckPoint import MyModelCheckpoint
+from checkpoint.HighFrqCheckpoint import HighFrqCheckpoint
 from exp.baseExpirement import BasicExpirement, TrainCtx
 from pytorch_lightning.callbacks import EarlyStopping
 import traceback
@@ -14,6 +14,7 @@ import logging
 import logging.config
 import os
 import json
+import asyncio
 
 
 @serialiable
@@ -129,19 +130,19 @@ if __name__ == "__main__":
             logger=tb_logger,
             max_epochs=10000,
             callbacks=[
-                EarlyStopping(
-                    monitor=BasicExpirement.VAL_RECONS_LOSS,  # 监控验证损失
-                    patience=100,  # 如果3个epoch内损失没有改善，则提前停止
-                    min_delta=0.01,  # 损失改善的最小阈值为0.01
-                    mode="min",  # 目标是最小化验证损失
-                ),
+                # EarlyStopping(
+                #     monitor=BasicExpirement.VAL_RECONS_LOSS,  # 监控验证损失
+                #     patience=1000,  # 如果3个epoch内损失没有改善，则提前停止
+                #     min_delta=0.01,  # 损失改善的最小阈值为0.01
+                #     mode="min",  # 目标是最小化验证损失
+                # ),
                 LearningRateMonitor(),
-                MyModelCheckpoint(
-                    save_top_k=2,
+                HighFrqCheckpoint(
+                    save_top_k=5,
                     dirpath=config.model_save_dir,
+                    filename=f"model-{{epoch:02d}}-{{{BasicExpirement.VAL_RECONS_LOSS}:.2f}}",
                     monitor=BasicExpirement.VAL_RECONS_LOSS,
                     mode="min",
-                    every_n_epochs=5,
                 ),
             ],
         )
