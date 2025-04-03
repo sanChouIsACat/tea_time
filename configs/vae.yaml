@@ -1,7 +1,7 @@
 loader_config:
   batch_size: 36
   filePath: ./data/data.xlsx
-  sheet_name: Sheet1
+  sheet_name: datas
   train_percentage: 0.8
 model_paras_log_dir: paras_logs
 project_log_dir: logs
@@ -11,39 +11,39 @@ train_config:
   lr: 0.0001
 vae_config:
   decoder_hidden_dim:
-  - 128
-  - 128
-  - 128
-  - 128
-  - 128
-  - 128
-  - 128
-  - 128
-  - 128
-  - 128
-  - 128
-  - 128
-  - 128
-  - 128
+  - 1024
+  - 1024
+  - 1024
+  - 1024
+  - 1024
+  - 1024
+  - 1024
+  - 1024
+  - 1024
+  - 1024
+  - 1024
+  - 1024
+  - 1024
+  - 1024
   encoder_hidden_dim:
-  - 128
-  - 128
-  - 128
-  - 128
-  - 128
-  - 128
-  - 128
-  - 128
-  - 128
-  - 128
-  - 128
-  - 128
-  - 128
-  - 128
-  - 128
-  - 128
-  - 128
-  - 128
-  input_dim: 100
+  - 1024
+  - 1024
+  - 1024
+  - 1024
+  - 1024
+  - 1024
+  - 1024
+  - 1024
+  - 1024
+  - 1024
+  - 1024
+  - 1024
+  - 1024
+  - 1024
+  - 1024
+  - 1024
+  - 1024
+  - 1024
+  input_dim: 228
   output_dim: 1
-  latent_dim: 128
+  latent_dim: 1024

@@ -141,5 +141,5 @@ class VAE(nn.Module):
             dim=0,
         )
 
-        loss = recons_loss + kld_loss
-        return loss, recons_loss, kld_loss
+        loss = 10000 * recons_loss + kld_loss
+        return loss, 10000 * recons_loss, kld_loss
